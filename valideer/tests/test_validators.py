@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from functools import partial, wraps
 import collections
@@ -504,16 +504,18 @@ class TestValidator(unittest.TestCase):
 
         self._testValidation(V.AllOf("number",
                                      lambda x: x > 0,
-                                     V.AdaptBy(datetime.utcfromtimestamp)),
-                             adapted=[(1373475820, datetime(2013, 7, 10, 17, 3, 40))],
+                                     V.AdaptBy(lambda ts:
+                                               datetime.fromtimestamp(ts, timezone.utc))),
+                             adapted=[(1373475820, datetime(2013, 7, 10, 17, 3, 40, tzinfo=timezone.utc))],
                              invalid=["1373475820", -1373475820])
 
     def test_chainof(self):
         self._testValidation(V.ChainOf(V.AdaptTo(int),
                                        V.Condition(lambda x: x > 0),
-                                       V.AdaptBy(datetime.utcfromtimestamp)),
-                             adapted=[(1373475820, datetime(2013, 7, 10, 17, 3, 40)),
-                                      ("1373475820", datetime(2013, 7, 10, 17, 3, 40))],
+                                       V.AdaptBy(lambda ts:
+                                                 datetime.fromtimestamp(ts, timezone.utc))),
+                             adapted=[(1373475820, datetime(2013, 7, 10, 17, 3, 40, tzinfo=timezone.utc)),
+                                      ("1373475820", datetime(2013, 7, 10, 17, 3, 40, tzinfo=timezone.utc))],
                              invalid=["nan", -1373475820])
 
     def test_condition(self):
@@ -942,8 +944,8 @@ class TestValidator(unittest.TestCase):
         V.set_name_for_types("integer", int, long)
         V.set_name_for_types("number", float)
         V.set_name_for_types("string", str, unicode)
-        V.set_name_for_types("array", list, collections.Sequence)
-        V.set_name_for_types("object", dict, collections.Mapping)
+        V.set_name_for_types("array", list, collections.abc.Sequence)
+        V.set_name_for_types("object", dict, collections.abc.Mapping)
 
         self._testValidation({"+foo": "number",
                               "?bar": ["integer"],
